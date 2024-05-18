@@ -124,7 +124,7 @@ class sim():
         
 
 if __name__=="__main__":
-    s = sim(3,4, 10, log=True)
+    s = sim(3,4, , log=True)
     np.random.seed(0)
     for i in range(1000):
         s.clock(20)
