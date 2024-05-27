@@ -42,8 +42,7 @@ class sim():
         #dictionary
         self.dict = {'event type': self.event_selected, 'customer arrived': self.num_arrived,
                      'customer_in_system': self.customer_in_system, 
-                     'customer_departed': self.num_departed,
-                     'waiting_time' : self.waiting_time, 
+                     'customer_departed': self.num_departed, 
                      'unsatisfied_customer' : self.unsatisfied_customer} 
 
 
@@ -54,8 +53,6 @@ class sim():
         """
         t_event = min(self.time_arrival, *self.time_depart)
         
-        self.waiting_time.append(t_event - self.time)
-
         self.total_waiting_time += self.total_customer_in_system*(t_event - self.time)
 
         self.time = t_event

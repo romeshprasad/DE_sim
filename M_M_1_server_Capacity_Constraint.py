@@ -41,7 +41,6 @@ class sim():
         self.dict = {'event type': self.event_selected, 'customer arrived': self.num_arrived,
                      'customer_in_system': self.customer_in_system, 
                      'customer_departed': self.num_departed,
-                     'waiting_time' : self.waiting_time, 
                      'unsatisfied_customer' : self.unsatisfied_customer} 
 
 
@@ -52,7 +51,7 @@ class sim():
         """
         t_event = min(self.time_arrival, self.time_depart)
         
-        self.waiting_time.append(t_event - self.time)
+        #self.waiting_time.append(t_event - self.time)
 
         self.total_waiting_time += self.total_customer_in_system*(t_event - self.time)
 
@@ -124,7 +123,7 @@ class sim():
         
 
 if __name__=="__main__":
-    s = sim(3,4, , log=True)
+    s = sim(3,4,5, log=True)
     np.random.seed(0)
     for i in range(1000):
         s.clock(20)
