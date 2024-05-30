@@ -162,7 +162,7 @@ class Sim():
             #print(self.dict)
             #print(f"Total unsatisfied customers: {self.unsatisfied_customers}")
             print(f"Master queue log: {self.master_queue}")
-        #sys.exit("Simulation ended: simulation clock exceeds maximum clock time")
+        sys.exit("Simulation ended: simulation clock exceeds maximum clock time")
 
 if __name__=="__main__":
     s = Sim(3,4, 2, 3,0, log=True)
