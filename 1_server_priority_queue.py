@@ -3,17 +3,19 @@ import sys
 import heapq
 
 class Sim():
-    def __init__(self, lam_bda, mu, max_queue_length, log: bool) -> None:
+    def __init__(self, lam_bda, mu, max_queue_length, num_servers, log: bool) -> None:
         self.total_customer_in_system = 0  # initially 0 customers
         self.lam_bda = lam_bda
         self.mu = mu
         self.max_queue_length = max_queue_length
         self.unsatisfied_customers = 0
-        
+        self.num_servers = num_servers #num of servers in system
+        self.busy_server = 0
         self.time = 0  # clock is 0
         self.event_queue = []  # priority queue for events
         self.schedule_event(self.time + self.inter_arrival_gen(), 'arrival') #here scheduler is used
-        self.time_depart = float('inf')
+        self.time_depart = [float('inf')]*self.num_servers
+        
 
         # statistics
         self.log = log
@@ -37,7 +39,7 @@ class Sim():
         }
 
         # initialize master queue
-        self.master_queue = [0]
+        self.master_queue = [(0, 'start')]
 
     def schedule_event(self, event_time, event_type):
         heapq.heappush(self.event_queue, (event_time, event_type))
@@ -49,9 +51,9 @@ class Sim():
 
             #logging
             self.time, event_type = heapq.heappop(self.event_queue) #from queue pop smallest time
-            self.master_queue.append(self.time) #log that time
+            self.master_queue.append((self.time, event_type)) #log that time
 
-            print(f"time chosen: {self.time}, event: {event_type}")
+            #print(f"time chosen: {self.time}, event: {event_type}")
 
             if event_type == 'arrival':
                 self.arrival_event()
@@ -61,16 +63,23 @@ class Sim():
         self.logging()
 
     def arrival_event(self):
-        if self.total_customer_in_system < self.max_queue_length:
+        if self.total_customer_in_system <= self.max_queue_length*self.num_servers:
             self.total_customer_in_system += 1
             self.total_num_arrived += 1
 
             self.num_arrived.append(self.total_num_arrived)
             self.event_selected.append("Arrival")
             self.customer_in_system.append(self.total_customer_in_system)
-
-            if self.total_customer_in_system == 1:
-                self.schedule_event(self.time + self.service_time_gen(), 'departure')
+            
+            #this logic checks if server is busy
+            if self.busy_server < self.num_servers:
+                self.busy_server += 1
+                for i in range(self.num_servers):
+                    if self.time_depart[i] == float("inf"):
+                        self.schedule_event(self.time + self.service_time_gen(), 'departure')
+                        break
+            # if self.total_customer_in_system == 1:
+            #     self.schedule_event(self.time + self.service_time_gen(), 'departure')
             
             self.schedule_event(self.time + self.inter_arrival_gen(), 'arrival')
         else:
@@ -86,9 +95,25 @@ class Sim():
         self.customer_in_system.append(self.total_customer_in_system)
         self.num_departed.append(self.total_num_departed)
         self.event_selected.append("Departure")
+        
+        for i in range(self.num_servers):
+            if self.time == self.time_depart[i]:
+                self.time_depart[i] = float('inf')
+                break
 
-        if self.total_customer_in_system > 0:
-            self.schedule_event(self.time + self.service_time_gen(), 'departure')
+        self.busy_server -= 1
+        if self.total_customer_in_system >= self.num_servers:
+            self.busy_server += 1
+            for i in range(self.num_servers):
+                if self.time_depart[i] == float('inf'):
+                    self.schedule_event(self.time + self.service_time_gen(), 'departure')
+                    #self.time_depart[i] = self.time + self.service_time_gen()
+                    break
+
+        # if self.total_customer_in_system > 0:
+        #     self.busy_server -= 1
+        #     if 
+        #     self.schedule_event(self.time + self.service_time_gen(), 'departure')
 
         #print(f"Server status: {'Busy' if self.total_customer_in_system > 0 else 'Idle'}")
 
@@ -100,13 +125,14 @@ class Sim():
     
     def logging(self):
         if self.log:
-            print(self.dict)
-            print(f"Total unsatisfied customers: {self.unsatisfied_customers}")
+            self.master_queue.append((self.time, "End of Simulation"))
+            #print(self.dict)
+            #print(f"Total unsatisfied customers: {self.unsatisfied_customers}")
             print(f"Master queue log: {self.master_queue}")
         sys.exit("Simulation ended: simulation clock exceeds maximum clock time")
 
 if __name__=="__main__":
-    s = Sim(3,4, 5, log=True)
+    s = Sim(3,4, 5, 1, log=True)
     np.random.seed(0)
     for i in range(1000):
         s.sim_clock(20)
