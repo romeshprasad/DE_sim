@@ -27,4 +27,11 @@ This code handles following edge cases: (The edge cases are identified with the 
 The above code with n=1 becomes the single server priority queue
 
 # Servers in series
-Upcoming
+To run the code please clone as shown above and navigate to the directory and copy/type the following command `python .\n_series_server_priority_queue.py` \
+In this code we have defined a variable 
+> service_rates. 
+
+Here the users can put a 
+>list of service time\
+
+Current code doesnot consider edge cases. It will be added as we move forward
