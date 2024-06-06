@@ -132,7 +132,7 @@ class Sim():
         sys.exit("Simulation ended: simulation clock exceeds maximum clock time")
 
 if __name__=="__main__":
-    s = Sim(3,4, 5, 1, log=True)
+    s = Sim(10,15,float('inf'), 1, log=True)
     np.random.seed(0)
     for i in range(1000):
         s.sim_clock(20)
