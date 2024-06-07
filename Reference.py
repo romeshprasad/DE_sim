@@ -94,7 +94,7 @@ class MM1Queue:
 if __name__ == "__main__":
     arrival_rate = 10  # Lambda
     service_rate = 15  # Mu
-    max_time = 1000000  # Simulation end time (increased for better approximation)
+    max_time = 10000  # Simulation end time (increased for better approximation)
 
     mm1 = MM1Queue(arrival_rate, service_rate, max_time)
     mm1.simulate()
