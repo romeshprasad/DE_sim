@@ -1,11 +1,13 @@
 import numpy as np
 import heapq
+import math
 
 
 class DESsim():
-    def __init__(self, arrival_rate , service_rate, max_clock) -> None:
+    def __init__(self, arrival_rate, service_rate, max_customers, max_clock) -> None:
         #initializing customers
-        self.customers_in_system = 0        
+        self.customers_in_system = 0
+        self.max_customers = max_customers        
         #initialize variable for interarrival and service rate
         self.arrival_rate = arrival_rate
         self.service_rate = service_rate
@@ -37,7 +39,7 @@ class DESsim():
         heapq.heappush(self.event_queue, (event_time, event_type))
         
     def clock(self): 
-        while self.current_time < self.max_clock:
+        while self.current_time < self.max_clock and self.event_queue:
             print(self.current_time)
             #this give us the total waiting time
             #event_time = min(self.arrival_time, self.depart_time)
@@ -47,7 +49,7 @@ class DESsim():
             
             #this sets the current time to the event time
             self.current_time = event_time
-
+        
             if event_type == "Arrival":
                 self.handle_arrival_event() 
             else:
@@ -63,10 +65,14 @@ class DESsim():
         
         # Theoretical values
         rho = self.arrival_rate / self.service_rate
-        L = rho / (1 - rho)
-        W = 1 / (self.service_rate - self.arrival_rate)
-        L_q = (rho ** 2) / (1 - rho)
-        W_q = self.arrival_rate / (self.service_rate * (self.service_rate - self.arrival_rate))
+        P0_sum = sum((self.arrival_rate / self.service_rate) ** n / math.factorial(n) for n in range(self.max_customers + 1))
+        P0 = 1 / P0_sum
+        Pn = [P0 * (self.arrival_rate / self.service_rate) ** n / math.factorial(n) for n in range(self.max_customers + 1)]
+        
+        L = sum(n * Pn[n] for n in range(self.max_customers + 1))
+        W = L / (self.arrival_rate * (1 - Pn[-1]))
+        L_q = L - self.arrival_rate * (1 - Pn[-1]) / self.service_rate
+        W_q = L_q / (self.arrival_rate * (1 - Pn[-1]))
 
         print('Simulation results:')
         print(f'Average number of customers in system: {avg_num_in_system:.2f}')
@@ -77,36 +83,44 @@ class DESsim():
 
         print('\nTheoretical steady-state values:')
         print(f'Average number of customers in system: {L:.2f}')
-        print(f"Average number waiting in queue: {L_q:.2f}")
         print(f'Average time spent in system: {W:.2f}')
         print(f'Average time spent in queue: {W_q:.2f}')
         print(f'Average time spent in service: {1 / self.service_rate:.2f}')
+        print(f'Average number of customers waiting in queue: {L_q:.2f}')
                 
     def handle_arrival_event(self):
-        self.customers_in_system += 1
-        self.num_arrivals += 1
-        self.total_customer_in_system += 1
         
-        if self.customers_in_system == 1:
-            service_time = self.gen_service_time()
-            self.total_time_in_service += service_time #logging 
-            self.depart_time = self.current_time + service_time
-            self.schedule_events(self.depart_time, "Departure")
+        if self.customers_in_system < self.max_customers:
+            self.customers_in_system += 1
+            self.num_arrivals += 1
+            self.total_customer_in_system += 1
+            
+            #schedule next arrival only if there is space in queue
+            self.arrival_time = self.current_time + self.gen_interarrival_time()
+            self.schedule_events(self.arrival_time, "Arrival") #adding next arrival event to the list
+            
+            #if there is only one customer schedule departure
+            if self.customers_in_system == 1:
+                service_time = self.gen_service_time()
+                self.total_time_in_service += service_time #logging 
+                self.depart_time = self.current_time + service_time
+                self.schedule_events(self.depart_time, "Departure")
         
-        self.arrival_time = self.current_time + self.gen_interarrival_time()
-        self.schedule_events(self.arrival_time, "Arrival") #adding events to the list
+        
         
     def handle_departure_event(self):
         self.customers_in_system -= 1
         self.num_depart += 1
         time_in_system = self.current_time - self.last_event_time
         self.total_time_in_system += time_in_system
-        
+            
         if self.customers_in_system > 0:
             service_time = self.gen_service_time()
             self.total_time_in_service += service_time
             self.depart_time = self.current_time + service_time
             self.schedule_events(self.depart_time, "Departure")
+            #self.depart_time = self.current_time + self.gen_service_time()
+            #self.schedule_events(self.depart_time, "Departure")
         else:
             self.depart_time = float('inf')
             #self.schedule_events(self.depart_time, "No customer for departure")
@@ -127,6 +141,6 @@ class DESsim():
     
     
 if __name__=="__main__":
-    s = DESsim(10,15, 500)
+    s = DESsim(20, 5, 10, 500)
     s.clock()
     print(f"customer in system: {s.customers_in_system}, arrival : {s.num_arrivals}, departure: {s.num_depart}")   

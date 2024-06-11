@@ -48,6 +48,8 @@ class DESsim():
             #this sets the current time to the event time
             self.current_time = event_time
 
+
+        
             if event_type == "Arrival":
                 self.handle_arrival_event() 
             else:
@@ -103,9 +105,7 @@ class DESsim():
         self.total_time_in_system += time_in_system
         
         if self.customers_in_system > 0:
-            service_time = self.gen_service_time()
-            self.total_time_in_service += service_time
-            self.depart_time = self.current_time + service_time
+            self.depart_time = self.current_time + self.gen_service_time()
             self.schedule_events(self.depart_time, "Departure")
         else:
             self.depart_time = float('inf')
