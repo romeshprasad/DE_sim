@@ -33,6 +33,12 @@ class MMmQueue:
         self.agents_data = []  # List to store data about each agent
         self.servers = [Server(i) for i in range(num_servers)]  # List of servers
         self.agent_counter = 0
+        
+        
+        
+        self.master_queue = [(0, "Source", "Target", "l_queue")]
+        self.arrival = 0 # this are number for data logging
+        self.departure = num_servers + 1 
 
         
         #simulation logging 
@@ -121,10 +127,18 @@ class MMmQueue:
             
             if event_type == 'arrival':
                 self.handle_arrival(agent)
+                if agent.server_id == None:
+                    server_id = 1
+                    self.master_queue.append([self.time, self.arrival, server_id, agent.queue_length_on_arrival])
+                else:
+                    self.master_queue.append([self.time, self.arrival, agent.server_id + 1, agent.queue_length_on_arrival])
             elif event_type == 'departure':
                 self.handle_departure(agent)
+                self.master_queue.append([self.time, agent.server_id + 1, self.departure, 0])
+            
+            #self.master_queue.append([self.time, event_type,  agent.server_id])
 
-        return np.array(self.agents_data)
+        return np.array(self.agents_data), np.array(self.master_queue)
     
     def logging(self):
         
@@ -214,18 +228,20 @@ if __name__ == "__main__":
     arrival_rate = 10  # Lambda 
     service_rate = 15  # Mu 
     max_time = 10  # Maximum simulation time
-    num_servers = 1  # Number of servers
+    num_servers = 5  # Number of servers
 
     mm_m_queue = MMmQueue(arrival_rate, service_rate, max_time, num_servers)
-    agents_data = mm_m_queue.simulate()
+    agents_data, master_queue = mm_m_queue.simulate()
+    
+    print(master_queue)
     
     # Print data for each agent
     for data in agents_data:
         print(data)
         
-    mm_m_queue.logging()
+    #mm_m_queue.logging()
 
     # Visualize queue length over time
-    mm_m_queue.visualize()
+    #mm_m_queue.visualize()
     
-    np.save("Data from 2 servers", agents_data)
+    np.save("Data from 5 server", master_queue)
