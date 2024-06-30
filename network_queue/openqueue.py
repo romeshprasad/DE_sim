@@ -140,6 +140,7 @@ class OpenQueueNetwork:
         next_queue_id = np.random.choice(len(probabilities), p=probabilities)
         return next_queue_id if next_queue_id != len(probabilities) else None
     
+    #function used for graph plotting
     def get_node(self):
         # Generate nodes and their positions
         Nodes = [0]  # Start with the arrival node

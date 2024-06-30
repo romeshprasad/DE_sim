@@ -22,7 +22,7 @@ class Server:
         self.current_agent = None
 
 class MMmQueue:
-    def __init__(self, arrival_rate, service_rate, max_time, num_servers):
+    def __init__(self, arrival_rate, service_rate, max_time, num_servers, max_queue_length):
         self.arrival_rate = arrival_rate
         self.service_rate = service_rate
         self.max_time = max_time
@@ -33,18 +33,17 @@ class MMmQueue:
         self.agents_data = []  # List to store data about each agent
         self.servers = [Server(i) for i in range(num_servers)]  # List of servers
         self.agent_counter = 0
-        
-        
-        
+        self.max_queue_length = max_queue_length
+
         self.master_queue = [(0, "Source", "Target", "l_queue")]
         self.arrival = 0 # this are number for data logging
         self.departure = num_servers + 1 
 
-        
         #simulation logging 
         self.total_time_in_system = 0
         self.total_customers = 0
         self.total_time_in_service = 0
+        self.blocked_customer = 0
     
     def generate_interarrival_time(self):
         # Generate interarrival time using exponential distribution
@@ -76,16 +75,20 @@ class MMmQueue:
             service_time = self.generate_service_time()
             agent.departure_time = self.time + service_time
             heapq.heappush(self.event_queue, (agent.departure_time, 'departure', agent))
-        else:
+        elif len(self.queue) <= (self.max_queue_length + self.num_servers):
             # All servers are busy, so the agent joins the queue
-            self.queue.append(agent)
-        
+            self.queue.append(agent)   
+        else:
+            self.blocked_customer += 1  #need to verify this
+
         # Schedule the next arrival if within max_time
         next_arrival_time = self.time + self.generate_interarrival_time()
         if next_arrival_time <= self.max_time:
             self.agent_counter += 1
             next_agent = Agent(next_arrival_time, self.agent_counter)
             heapq.heappush(self.event_queue, (next_arrival_time, 'arrival', next_agent))
+        
+        #print(f"This is event_queue: {self.event_queue}")
     
     def handle_departure(self, agent):
         # Handle the departure of an agent
@@ -116,6 +119,7 @@ class MMmQueue:
     def simulate(self):
         # Schedule the first arrival
         arrival_time = self.generate_interarrival_time()
+        print(f"this is the first arrival: {arrival_time}")
         self.agent_counter += 1
         agent = Agent(arrival_time, self.agent_counter)
         heapq.heappush(self.event_queue, (arrival_time, 'arrival', agent))
@@ -139,61 +143,37 @@ class MMmQueue:
             #self.master_queue.append([self.time, event_type,  agent.server_id])
 
         return np.array(self.agents_data), np.array(self.master_queue)
-    
-    def logging(self):
-        
-        #hande data as numpy array
-        data = np.array(self.agents_data)
-        departure_time = data[:,2]
-        arrival_time = data[:,0]
-        service_start_time = data[:,1]
-        queue_length = data[:,3]
-        total_time_in_system = sum(departure_time) - sum(arrival_time)
-        total_time_in_service = sum(departure_time) - sum(service_start_time)
-        total_customers = max(data[:,5])
-        
-        #simulation results
-        avg_num_in_system = total_time_in_system / self.time if self.time > 0 else 0
-        avg_num_in_queue = sum(queue_length)/total_customers
-        avg_time_in_system = total_time_in_system / total_customers if total_customers > 0 else 0
-        avg_time_in_service = total_time_in_service / total_customers if total_customers > 0 else 0
-        avg_time_in_queue = avg_time_in_system - avg_time_in_service
-        
-        print('Simulation results:')
-        print(f'Average number of customers in system: {avg_num_in_system:.2f}')
-        print(f'Average number of customers in queue: {avg_num_in_queue:.2f}')
-        print(f'Average time spent in system: {avg_time_in_system:.2f}')
-        print(f'Average time spent in queue: {avg_time_in_queue:.2f}')
-        print(f'Average time spent in service: {avg_time_in_service:.2f}')
-        
-        #theoretical results    
-        rho = self.arrival_rate / (num_servers*self.service_rate)
-        A = 0
-        for a in range(0, num_servers):
-            A += pow((num_servers*rho), a) / math.factorial(a)
-        B = pow((num_servers * rho), num_servers) / (math.factorial(num_servers)*(1-rho)) 
-        pi_0 = 1 /  (A + B)
-        
-        p_custo_gth_service_num = pow((num_servers*rho),num_servers)* pi_0
-        p_custo_gth_service_den = (math.factorial(num_servers))*(1-rho)
-        p_cust_gth_ser = p_custo_gth_service_num / p_custo_gth_service_den
-        
-        L_q = p_cust_gth_ser * rho / (1 - rho)
-        W_q = L_q / arrival_rate
-        L = L_q +  (arrival_rate/service_rate)
-        W = L / arrival_rate
-        
-        print('\nTheoretical steady-state values:')
-        print(f'Steady state: {pi_0}, rho: {rho}, P(cust>server) : {p_cust_gth_ser}')
-        print(f'Average number of customers in system: {L:.2f}')
-        print(f'Average number in queue: {L_q:.2f}')
-        print(f'Average time spent in system: {W:.2f}')
-        print(f'Average time spent in queue: {W_q:.2f}')
-        print(f'Average time spent in service: {1 / self.service_rate:.2f}')                   
 
     def visualize(self):
         # Convert data to a numpy array for easier handling
         data = np.array(self.agents_data)
+
+        data1 = np.array(self.master_queue)
+    
+        # Extract time and queue length data
+        times = data1[:, 0]
+        queue_lengths = data1[:, 3]
+
+        # Create a figure and axis
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Plot the queue length over time
+        ax.step(times, queue_lengths, where='post', label='Queue Length')
+
+        # Add labels and title
+        ax.set_xlabel('Simulation Time')
+        ax.set_ylabel('Queue Length')
+        ax.set_title('Queue Length Over Simulation Time')
+
+        # Add a grid for better readability
+        ax.grid(True, linestyle='--', alpha=0.7)
+
+        # Add legend
+        ax.legend()
+
+        # Show the plot
+        plt.tight_layout()
+        plt.show()
         
         # Extract unique server IDs
         server_ids = np.unique(data[:, 4])
@@ -215,6 +195,7 @@ class MMmQueue:
 
         for server_id in server_ids:
             plt.plot(arrival_rates[server_id], queue_lengths[server_id], drawstyle='steps-post', label=f'q_server_{int(server_id)}')
+        plt.plot()
 
         plt.xlabel('Time')
         plt.ylabel('Queue Length')
@@ -225,23 +206,26 @@ class MMmQueue:
 
 # Example usage
 if __name__ == "__main__":
-    arrival_rate = 10  # Lambda 
-    service_rate = 15  # Mu 
+    arrival_rate = 20 # Lambda 
+    service_rate = 5  # Mu 
     max_time = 10  # Maximum simulation time
-    num_servers = 5  # Number of servers
+    num_servers = 3  # Number of servers
+    max_queue_length = 10
 
-    mm_m_queue = MMmQueue(arrival_rate, service_rate, max_time, num_servers)
+    np.random.seed(2)
+
+    mm_m_queue = MMmQueue(arrival_rate, service_rate, max_time, num_servers, max_queue_length)
     agents_data, master_queue = mm_m_queue.simulate()
     
-    print(master_queue)
+    #print(master_queue)
     
     # Print data for each agent
-    for data in agents_data:
-        print(data)
+    # for data in agents_data:
+    #     print(data)
         
     #mm_m_queue.logging()
 
     # Visualize queue length over time
-    #mm_m_queue.visualize()
+    mm_m_queue.visualize()
     
-    np.save("Data from 5 server", master_queue)
+    #np.save("Data from 5 server", master_queue)
