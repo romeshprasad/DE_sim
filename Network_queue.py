@@ -181,4 +181,4 @@ if __name__ == "__main__":
         print(data)
 
     # Visualize queue length over time
-    #network.visualize()
+    network.visualize()
