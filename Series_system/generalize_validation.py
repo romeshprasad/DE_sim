@@ -10,7 +10,7 @@ class MMQueue:
         pass
 
     def print_results(self):
-        print(f"Utilization factor (rho): {self.rho:.4f}")
+        #print(f"Utilization factor (rho): {self.rho:.4f}")
         print(f"L: {self.L:.4f}")
         print(f"Lq: {self.Lq:.4f}")
         print(f"Ls: {self.Ls:.4f}")
@@ -109,6 +109,48 @@ class MMckQueue(MMQueue):
                 pn[n] = (self.lambda_ / self.mu) ** n * p0 / (self.c ** (n - self.c) * math.factorial(self.c))
         return pn
 
+class series():
+    def __init__(self, arrival_rate, service_rate, c):
+        self.lambda_ = arrival_rate
+        self.mu = service_rate 
+        self.c = c
+        self.rho = [self.lambda_/ (self.mu[i]*self.c[i]) for i in range(len(self.mu))]
+        self.data = {stages:[] for stages in range(1, len(c))}
+            
+    def calculate_measures(self):
+        for stage in range(len(self.c)):
+            if self.c[stage] == 1:
+                self.L = self.rho[stage] / (1 - self.rho[stage])
+                self.Lq = self.rho[stage]**2 / (1 - self.rho[stage])
+                self.Ls = self.rho[stage]
+                self.W = 1 / (self.mu[stage] - self.lambda_)
+                self.Wq = self.rho[stage] / (self.mu[stage] - self.lambda_)
+                self.Ws = 1 / self.mu[stage]
+            else:
+                r = self.lambda_ / self.mu[stage]
+                p0 = 1 / (sum(r**n / math.factorial(n) for n in range(self.c[stage])) + 
+                        (r**self.c[stage] / math.factorial(self.c[stage])) * (1 / (1 - self.rho[stage])))
+                
+                self.Lq = (r**self.c[stage] * self.rho[stage] * p0) / (math.factorial(self.c[stage]) * (1 - self.rho[stage])**2)
+                self.L = self.Lq + r
+                self.Ls = r
+                self.W = self.L / self.lambda_
+                self.Wq = self.Lq / self.lambda_
+                self.Ws = 1 / self.mu[stage]
+
+            self.data[stage + 1] = [self.L, self.Lq, self.Ls, self.W, self.Wq, self.Ws]
+        
+        return self.data
+    
+    def print_results(self):
+        print(f"Utilization factor (rho): {self.rho}")
+        print(f"L: {self.L:.4f}")
+        print(f"Lq: {self.Lq:.4f}")
+        print(f"Ls: {self.Ls:.4f}")
+        print(f"W: {self.W:.4f}")
+        print(f"Wq: {self.Wq:.4f}")
+        print(f"Ws: {self.Ws:.4f}")
+
 def analyze_queue(queue_type, *args):
     queue = queue_type(*args)
     queue.calculate_measures()
@@ -117,11 +159,18 @@ def analyze_queue(queue_type, *args):
 
 # Example usage
 if __name__ == "__main__":
-    arrival_rate = 5  # customers per hour
-    service_rate = 6  # customers per hour
+    arrival_rate = 54  # customers per hour
+    #service_rate = 6  # customers per hour
+    num_servers = [1,3]
+    service_rate = [60, 20]
 
-    analyze_queue(MM1Queue, arrival_rate, service_rate)
-    analyze_queue(MM1kQueue, arrival_rate, service_rate, 10)  # k = 10
-    analyze_queue(MMcQueue, arrival_rate, service_rate, 3)    # c = 3
-    analyze_queue(MMckQueue, arrival_rate, service_rate, 3, 10)  # c = 3, k = 10
-    analyze_queue(MMckQueue, arrival_rate, service_rate, 1, 10)  # c = 1, k = 10 (equivalent to M/M/1/k)
+    # analyze_queue(MM1Queue, arrival_rate, service_rate)
+    # analyze_queue(MM1kQueue, arrival_rate, service_rate, 10)  # k = 10
+    # analyze_queue(MMcQueue, arrival_rate, service_rate, 3)    # c = 3
+    # analyze_queue(MMckQueue, arrival_rate, service_rate, 3, 10)  # c = 3, k = 10
+    # analyze_queue(MMckQueue, arrival_rate, service_rate, 1, 10)  # c = 1, k = 10 (equivalent to M/M/1/k)
+
+    x = series(arrival_rate, service_rate, num_servers)
+    l = x.calculate_measures()
+    print(l)
+

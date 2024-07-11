@@ -382,20 +382,18 @@ class OpenQueueNetwork:
 
 if __name__=="__main__":
     arrival_rate = 1.0
-    service_rates = [1, 1.5]
+    service_rates = [1, 1.5, 2]
     max_time = 10
-    num_servers = [2, 1]
-    prob_matrix = [[0.0, 1.0], [0.0, 0.0]]
+    num_servers = [1, 1, 1]
+    prob_matrix = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
 
     np.random.seed(2)
     network = OpenQueueNetwork(arrival_rate, service_rates, max_time, num_servers, prob_matrix)
     agents_data = network.simulate()   
     
     print(agents_data)
-
-
     
-    np.save("open_network_2_1",agents_data)
+    np.save("/home/romesh-prasad/ONR/Queuing_system/DE_sim/Data/agent_1_1_1",agents_data)
 
     # Visualize the results
     network.visualize()
