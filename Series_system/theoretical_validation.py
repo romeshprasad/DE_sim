@@ -154,20 +154,40 @@ class series():
         print(f"Ws: {self.Ws:.4f}")
 
 class Jacksonnetwork():
-    def __init__(self, arrival_rate, service_rate, num_servers, prob_matrix) -> None:
+    def __init__(self, arrival_rate, service_rate, num_servers, prob_matrix, external_arrivals) -> None:
         self.lambda_ = arrival_rate
         self.mu = service_rate
         self.c = num_servers
         self.p_mat = prob_matrix
+        if external_arrivals is None:
+            external_arrivals = [0] * len(service_rates)
+        self.external_arrivals = external_arrivals
+        self.external_arrivals[0] = self.lambda_
         self.data = {stages:[] for stages in range(1, len(self.c))}
 
     def effective_arrival_rates(self):
         effective_arrival = np.zeros(len(self.mu))
-        effective_arrival[0] = self.lambda_
 
-        for i in range(1, len(self.mu)):
-            for j in range(len(self.mu)):
-                effective_arrival[i] += effective_arrival[j] * self.p_mat[j][i]        
+        # Initialize the external arrival rates for each node
+        for i in range(len(self.mu)):
+            effective_arrival[i] = self.external_arrivals[i]
+
+        # Iteratively solve for the effective arrival rates
+        convergence_threshold = 1e-6
+        max_iterations = 1000
+        for _ in range(max_iterations):
+            previous_arrival = effective_arrival.copy()
+            for i in range(len(self.mu)):
+                if i == 0:
+                    # Formula = lambda_i = r_i + sum(prob_mat(i,j)*lambda_j)
+                    effective_arrival[i] = self.lambda_ + sum(previous_arrival[j] * self.p_mat[j][i] for j in range(len(self.mu)))
+                else:
+                    effective_arrival[i] = self.external_arrivals[i] + sum(previous_arrival[j] * self.p_mat[j][i] for j in range(len(self.mu)))
+            # Check for convergence
+            if np.all(np.abs(effective_arrival - previous_arrival) < convergence_threshold):
+                break
+
+        print(effective_arrival)
         return effective_arrival
     
     def utilization_factor(self, effective_arrival):
@@ -288,11 +308,12 @@ def analyze_queue(queue_type, *args):
 
 # Example usage
 if __name__ == "__main__":
-    arrival_rate = 1.0
+    arrival_rate = 1
     service_rates = [1.5, 1.5, 2]
-    num_servers = [1, 2, 3]
-    prob_matrix = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
+    num_servers = [1, 1, 1]
+    prob_matrix = [[0.0, 1, 0], [0, 0.0, 1], [0.0, 0.0, 0.0]]
     capacity = [5,10,15]
+    #external_arrival = [1, 0 , 0]
 
     # analyze_queue(MM1Queue, arrival_rate, service_rate)
     # analyze_queue(MM1kQueue, arrival_rate, service_rate, 10)  # k = 10
@@ -300,7 +321,7 @@ if __name__ == "__main__":
     # analyze_queue(MMckQueue, arrival_rate, service_rate, 3, 10)  # c = 3, k = 10
     # analyze_queue(MMckQueue, arrival_rate, service_rate, 1, 10)  # c = 1, k = 10 (equivalent to M/M/1/k)
 
-    x = Jacksonnetworkfinitecapacity(arrival_rate, service_rates, num_servers,prob_matrix, capacity)
+    x = Jacksonnetwork(arrival_rate, service_rates, num_servers,prob_matrix, external_arrivals= None)
     l = x.calculate_measures()
     print(l)
 

@@ -80,56 +80,6 @@ class Queue:
         # Generate service time using exponential distribution
         return round(np.random.exponential(1.0 / self.service_rate),3)
 
-# class master_data_logging():
-#     def __init__(self, server_id, queue_id, num_servers, event_type ):
-#         self.queue_id = queue_id
-#         self.server_id = server_id
-#         self.num_servers = num_servers
-#         source = 0
-#         target = sum(num_servers) + 1
-#         self.event_type = event_type
-#         #self.master_queue = [(source, target)]
-
-#     def capture_events(self):
-
-#         Nodes = self.get_node()
-
-#         server_id = self.server_id if self.server_id is not None else 0
-#         if self.queue_id == 0 and self.event_type == 'arrival':
-#             source = Nodes[0]  # Arrival node
-#             target = Nodes[self.get_index_from_list(server_id, self.queue_id, self.num_servers)]
-#         elif self.event_type == 'departure' and self.queue_id == len(self.num_servers)- 1:
-#             source = Nodes[self.get_index_from_list(server_id, self.queue_id, self.num_servers)]
-#             target = Nodes[-1]
-#         else:
-#             print("This is the else condition used")
-#             source = Nodes[self.get_index_from_list(server_id, self.queue_id, self.num_servers)]
-#             next_server_id = 0
-#             target = Nodes[self.get_index_from_list(next_server_id, self.queue_id + 1, self.num_servers)]
-        
-#         print(f"Capturing nodes: {Nodes}, queue_id:{self.queue_id} , server_id: {self.server_id} --source: {source}, target: {target}")
-
-#         return source , target
-
-#     def get_node(self):
-#         Nodes = [0]
-#         current_node_index = 1
-#         for stage, num_servers in enumerate(self.num_servers):
-#             for _ in range(num_servers):
-#                 Nodes.append(current_node_index)
-#                 current_node_index += 1
-#         Nodes.append(current_node_index)
-#         return Nodes
-
-#     def get_index_from_list(self, worker_number, stage_number, num_servers):
-#         offset = 1
-#         for stage in range(stage_number):
-#             offset += num_servers[stage]
-#         index = offset + worker_number
-#         total_servers = sum(num_servers)
-#         if index < 1 or index > total_servers:
-#             raise ValueError(f"Invalid index: {index}. Worker number: {worker_number}, Stage number: {stage_number}")
-#         return index
 
 class OpenQueueNetwork:
     """
@@ -325,8 +275,6 @@ class OpenQueueNetwork:
         next_queue_id = np.random.choice(len(probabilities), p=probabilities)
         return next_queue_id if next_queue_id != len(probabilities) else None
     
-    
-    
     def simulate(self):
         """
         Simulates the network and also schedules the first arrival. 
@@ -351,11 +299,7 @@ class OpenQueueNetwork:
             elif event_type == 'departure':
                 self.handle_departure(agent, queue_id)
 
-            # x = master_data_logging(agent.server_id, queue_id, self.num_servers, event_type)
-            # source, target = x.capture_events()
-            # self.master_queue.append([self.time, agent.agent_id ,event_type, source, target, agent.queue_length_on_arrival])
-
-        return np.array(self.agents_data)#, np.array(self.master_queue), agent.s_id
+        return np.array(self.agents_data)
 
     def visualize(self):
         # Convert data to a numpy array for easier handling
@@ -382,10 +326,10 @@ class OpenQueueNetwork:
 
 if __name__=="__main__":
     arrival_rate = 1.0
-    service_rates = [1, 1.5, 2]
-    max_time = 10
-    num_servers = [1, 1, 1]
-    prob_matrix = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
+    service_rates = [1.5, 1.5, 2, 2]
+    max_time = 10000
+    num_servers = [1, 1, 1, 1]
+    prob_matrix = [[0.0, 0.2, 0.0, 0.8], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [0.0,0.0,0.0,0.0]]
 
     np.random.seed(2)
     network = OpenQueueNetwork(arrival_rate, service_rates, max_time, num_servers, prob_matrix)
@@ -393,7 +337,7 @@ if __name__=="__main__":
     
     print(agents_data)
     
-    np.save("/home/romesh-prasad/ONR/Queuing_system/DE_sim/Data/agent_1_1_1",agents_data)
+    np.save("/home/romesh-prasad/ONR/Queuing_system/DE_sim/Data/agent_1_1_1_1(1)",agents_data)
 
     # Visualize the results
     network.visualize()

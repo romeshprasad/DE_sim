@@ -4,17 +4,55 @@ import matplotlib.pyplot as plt
 
 class Agent:
     def __init__(self, arrival_time, agent_id):
-        self.agent_id = agent_id
+        """ 
+        The base class for the agent. The agent moves through the network.
+
+        Parameters:
+        arrival_time: arrival time of the agent
+        agent_id: the unique id of the agent
+
+        Returns:
+        It returns attributes of each agent: 
+        arrival_time: Time when the agent arrives in the system
+        service_start_time: Time when the agent starts it service
+        departure_time: Time when the agent departs
+        queue_length on arrival: Queue length when the agent arrives in the system
+        server_id: The server number which provides service to the agent
+        agent_id:  The unique number of the agent  
+        """
+
         self.arrival_time = arrival_time
         self.service_start_time = None
-        self.service_end_time = None
-        self.server_id = None
+        self.departure_time = None
         self.queue_length_on_arrival = None
+        self.server_id = None
+        self.agent_id = agent_id
+         
+
+    def __lt__(self, other):
+        return self.arrival_time < other.arrival_time
+    
+    def generate_interarrival_time(self, arrival_rate):
+        # Generate interarrival time using exponential distribution
+        return round(np.random.exponential(1.0 / arrival_rate),3)
 
 class Server:
+    """
+    Base class for the server. 
+
+    Parameters:
+    server_id: Unique id of the server
+
+    Return:
+    It returns atributes for each server
+    server_id: Unique id for the agent
+    is_busy: Boolean
+    current_agent: Attribute of the agent that is gettng service
+    """
     def __init__(self, server_id):
         self.server_id = server_id
         self.is_busy = False
+        self.current_agent = None
 
 class Queue:
     def __init__(self, queue_id, num_servers, service_rate, capacity=float('inf')):
@@ -72,8 +110,27 @@ class OpenQueueNetwork:
             
         print(f"Arrival - Time: {self.time}, Agent ID: {agent.agent_id}, Assigned Server: {agent.server_id}, Queue ID: {queue_id}")
 
+    def log_departure(self, agent, queue_id):
+        """
+        log agent's data along with queue_id.
+        It is used for statistical calculations
+        """
+        self.agents_data.append([
+            agent.agent_id,
+            agent.arrival_time,
+            agent.service_start_time,
+            agent.departure_time,
+            agent.server_id,
+            queue_id,
+            agent.queue_length_on_arrival
+        ])
+
+
     def handle_departure(self, agent, queue_id):
         queue = self.queues[queue_id]
+        self.log_departure(agent, queue_id)
+
+
         server = queue.servers[agent.server_id]
         server.is_busy = False
         
@@ -112,30 +169,31 @@ class OpenQueueNetwork:
                 queue_id = next(queue.queue_id for queue in self.queues if any(server.server_id == agent.server_id for server in queue.servers))
                 self.handle_departure(agent, queue_id)
         
-        return self.agents_data
+        return np.array(self.agents_data)
 
     def visualize(self):
         # Convert data to a numpy array for easier handling
         data = np.array(self.agents_data)
-        agent_ids = data[:, 0]
-        arrival_times = data[:, 1]
-        service_start_times = data[:, 2]
-        departure_times = data[:, 3]
-        server_ids = data[:, 4]
-        queue_ids = data[:, 5]
-        queue_lengths = data[:, 6]
+
+        # agent_ids = data[:, 0]
+        # arrival_times = data[:, 1]
+        # service_start_times = data[:, 2]
+        # departure_times = data[:, 3]
+        # server_ids = data[:, 4]
+        # queue_ids = data[:, 5]
+        # queue_lengths = data[:, 6]
         
-        plt.figure(figsize=(12, 6))
-        for queue_id in np.unique(queue_ids):
-            queue_data = data[data[:, 5] == queue_id]
-            plt.plot(queue_data[:, 1], queue_data[:, 6], drawstyle='steps-post', label=f'Queue {queue_id}')
+        # plt.figure(figsize=(12, 6))
+        # for queue_id in np.unique(queue_ids):
+        #     queue_data = data[data[:, 5] == queue_id]
+        #     plt.plot(queue_data[:, 1], queue_data[:, 6], drawstyle='steps-post', label=f'Queue {queue_id}')
         
-        plt.xlabel('Time')
-        plt.ylabel('Queue Length')
-        plt.title('Queue Length Over Time for Different Queues')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        # plt.xlabel('Time')
+        # plt.ylabel('Queue Length')
+        # plt.title('Queue Length Over Time for Different Queues')
+        # plt.legend()
+        # plt.grid(True)
+        # plt.show()
 
 if __name__=="__main__":
     arrival_rate = 1.0
@@ -143,7 +201,7 @@ if __name__=="__main__":
     max_time = 10
     num_servers = [1, 1, 1]
     prob_matrix = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
-    capacities = [5, 10, 15]  # Set capacities for each queue
+    capacities = [10, 10, 10]  # Set capacities for each queue
 
     np.random.seed(2)
     network = OpenQueueNetwork(arrival_rate, service_rates, max_time, num_servers, prob_matrix, capacities)
@@ -151,7 +209,7 @@ if __name__=="__main__":
     
     print(agents_data)
     
-    np.save("agent_data.npy", agents_data)
+    #np.save("agent_data.npy", agents_data)
 
     # Visualize the results
     network.visualize()
