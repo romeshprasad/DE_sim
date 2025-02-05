@@ -1,12 +1,10 @@
 # DE_sim
-This repository is for discrete event simulation using priority queue in python
+This repository simulates discrete event simulations for priority queues in Python. The library is still under development. The current implementation allows for the simulation of Jackson networks, as well as parallel and series networks. You can validate the simulation models using mathematical methods.
 
 To run the code
 # Servers in parallel
 ## Single server priority queue
-Please clone the git repository: `https://github.com/romeshprasad/DE_sim.git` in the command shell or visual studio code or any other IDEs.\
-Navigate to the folder where the repository is cloned.\
-To run simply type/copy on your command line  `python .\1_server_priority_queue.py`
+To run  `python .\1_server_priority_queue.py`
 
 This section of the code doesn't handle the edge cases.\
 
